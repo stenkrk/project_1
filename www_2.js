@@ -1,74 +1,89 @@
 const http = require("http");
 const fs = require("fs");
-// laeme mooduli päringu küsimiseks
 const url = require("url");
-//failitee module
 const path = require("path");
 const dateEt = require("./src/dateTimeET");
 const textRef = "txt/vanasonad.txt";
-const pageHead = '<!DOCTYPE html>\n<html lang="et">\n<head>\n\t<meta charset="utf-8">\n\t<title>Sten Kreek, veebiprogrammeerimine</title>\n</head>\n<body>\n';
-const pageBanner = '<img src="vp_banner_2025_TA.jpg" alt="vp banner">'
-const pageBody = '\t<h1>Sten Kreek, veebiprogrammeerimine</h1>\n\t <p>See leht on loodud veebiprogrammeerimise kursusel <a href="https://www.tlu.ee">Tallinna Ülikoolis</a> ning ei sislda tõsiseltvõetavat sisu!</p>\n\t<p>Esialgu tutvusime lihtsalt HTML keelega, peatselt programmeerime.</p>\n\t<hr>';
-const pageFoot = '\n</body>\n</html>';
-
+const pageStart = '<!DOCTYPE html>\n<html lang="et">\n<head>\n\t<meta charset="utf-8">\n\t<title>Sten Kreek, veebiprogrammeerimine</title>\n</head>\n<body>';
+const pageBody = '\n\t<h1>Sten Kreek, veebiprogrammeerimine</h1>\n\t<p>See leht on loodud <a href="https://www.tlu.ee">Tallinna Ülikoolis</a> veebiprogrammeerimise kurusel ja ei oma mõistlikku sisu.</p>\n\t<p>Algul lihtsalt HTML ja varsti juba Node.Js.</p>\n\t<hr>';
+const pageBanner = '<img src="images/vp_banner_2025_AA.jpg" alt="Kursuse bänner">';
+const pageEnd = '\n</body>\n</html>';
 http.createServer(function(req, res){
-	// küsin urli
-	console.log("Päring: " + req.url);
-	let currentUrl = url.parse(req.url, true);
-	console.log("Parsituna: " + currentUrl.pathname);
-	// lisaparameetreid ei arvestata nt kui teen :5133/?!#asdasdasdasdas
-	// favicon pagei üleval olev logo
-	
-	if(currentUrl.pathname === "/"){
-		res.writeHead(200, {"Content-type": "text/html"});
-		res.write(pageHead);
-		res.write(pageBanner);
-			res.write(pageBody);
-			res.write("\n\t<p>Täna on " + dateEt.weekDay() + " " + dateEt.fullDate() + ".</p>");
-			res.write(pageFoot);
-			return res.end();
-	}
-	
-	else if(currentUrl.pathname === "/vanasonad/"){
-	
-	res.writeHead(200, {"Content-type": "text/html"});
-	fs.readFile(textRef, "utf8", (err, data)=>{
-		if(err){
-			res.write(pageHead);
-			res.write(pageBanner);
-			res.write(pageBody);
-			res.write("\n\t<p>Täna on " + dateEt.weekDay() + " " + dateEt.fullDate() + ".</p><p>Kahjuks tänaseks ühtki vanasõna välja pakkuda pole!</p>");
-			res.write(pageFoot);
-			return res.end();
-		} else {
-			let folkWisdom = data.split(";");
-			let folkWisdomOutput = "\n\t<ol>";
-			for (let i = 0; i < folkWisdom.length; i ++){
-				folkWisdomOutput += "\n\t\t<li>" + folkWisdom[i] + "</li>";
-			}
-			folkWisdomOutput += "\n\t</ol>";
-			res.write(pageHead);
-			res.write(pageBanner);
-			res.write(pageBody);
-			res.write("\n\t<p>Täna on " + dateEt.weekDay() + " " + dateEt.fullDate() + ".</p>");
-			res.write("\n\t<h2>Valik Eesti vanasõnu</h2>")
-			res.write(folkWisdomOutput);
-			res.write(pageFoot);
-			return res.end();
-			}
-		});
-	}
-	
-	else if(currentUrl.pathname === "/vp_banner_2025_TA.jpg"){
-	// liidame muidu kättesaamatu piltide kausta
-		let bannerPath = path.join(__dirname, "images");
-		fs.readFile(bannerPath + currentUrl.pathname, (err, data)=>{
-			if(err){
-				throw(err);
-			} else {
-				res.writeHead(200, {"Content-type": "image/jpeg"})
-				res.end(data);
-			}
-		});
-	}
+    console.log("Praegune URL: " + req.url);
+    let currentUrl = url.parse(req.url, true);
+    console.log("Puhas url: " + currentUrl.pathname);
+
+    if(currentUrl.pathname === "/"){
+        res.writeHead(200, {"Content-type": "text/html"});
+        res.write(pageStart);
+        res.write(pageBanner);
+        res.write(pageBody);
+        res.write("\n\t<p>Täna on " + dateEt.weekDay() + " " + dateEt.longDate() + ".</p>");
+        res.write('\n\t<p>Vaata ka valikut <a href="/vanasonad">vanasõnu</a> või <a href="/hobid">hobisid</a>.</p>');
+        res.write(pageEnd);
+        return res.end();
+    }
+    else if(currentUrl.pathname === "/vanasonad"){
+        res.writeHead(200, {"Content-type": "text/html"});
+        fs.readFile(textRef, "utf8", (err, data)=>{
+            res.write(pageStart);
+            res.write(pageBanner);
+            res.write(pageBody);
+            res.write("\n\t<p>Täna on " + dateEt.weekDay() + " " + dateEt.longDate() + ".</p>");
+            if(err){
+                res.write("<p>Midagi pole pakkuda praegu!</p>");
+            } else {
+                let oldWisdomList = data.split(";");
+                let folkWisdomOutput = "\n\t<ol>";
+                for (let i = 0; i < oldWisdomList.length; i++){
+                    folkWisdomOutput += "\n\t\t<li>" + oldWisdomList[i] + "</li>";
+                }
+                folkWisdomOutput += "\n\t</ol>";
+                res.write("\n\t<h2>Valik Eesti vanasõnu</h2>");
+                res.write(folkWisdomOutput);
+            }
+            res.write(pageEnd);
+            return res.end();
+        });
+    }
+    else if(currentUrl.pathname === "/hobid"){
+        res.writeHead(200, {"Content-type": "text/html"});
+        let hobbies = [
+            {name: "Minu lemmik jõusaal", url: "https://24-7fitness.ee/"},
+            {name: "Y8", url: "https://www.y8.com/"},
+            {name: "Kodeerimine ja IT", url: "https://www.codecademy.com"}
+        ];
+
+        let hobbiesList = "\n\t<ul>";
+        for(let i = 0; i < hobbies.length; i++){
+            hobbiesList += `\n\t\t<li><a href="${hobbies[i].url}" target="_blank">${hobbies[i].name}</a></li>`;
+        }
+        hobbiesList += "\n\t</ul>";
+
+        res.write(pageStart);
+        res.write(pageBanner);
+        res.write(pageBody);
+        res.write("\n\t<h2>Minu hobid</h2>");
+        res.write(hobbiesList);
+        res.write('\n\t<img src="images/landscape.jpg" alt="Minu hobi foto" style="max-width:300px;">');
+        res.write(pageEnd);
+        return res.end();
+    }
+    else if(currentUrl.pathname.startsWith("/images/")){
+        let imgPath = path.join(__dirname, currentUrl.pathname);
+        fs.readFile(imgPath, (err, data)=>{
+            if(err){
+                res.writeHead(404);
+                res.end("Pilt puudub!");
+            } else {
+                res.writeHead(200, {"Content-type": "image/jpeg"});
+                res.end(data);
+            }
+        });
+    }
+    else {
+        res.writeHead(404, {"Content-type": "text/html"});
+        res.end("<h1>404</h1><p>Sellist lehte ei ole olemas!</p>");
+    }
+
 }).listen(5313);
